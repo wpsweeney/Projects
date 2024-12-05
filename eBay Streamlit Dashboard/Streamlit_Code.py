@@ -55,19 +55,21 @@ def data():
         default=['ALL']
     )
 
-    # Price filter
-    price_filter = st.slider(
-        'Select Price Range', 
-        min_value=float(df['Price'].min()), 
-        max_value=float(df['Price'].max()), 
-        value=(float(df['Price'].min()), float(df['Price'].max()))
-    )
-
+    col1, col2 = st.columns(2, gap="large")
+    with col1:
+        # Price filter
+        price_filter = st.slider(
+            'Select Price Range', 
+            min_value=float(df['Price'].min()), 
+            max_value=float(df['Price'].max()), 
+            value=(float(df['Price'].min()), float(df['Price'].max()))
+        )
+    with col2:
     # Screen size filter
-    screen_size_filter = st.segmented_control(
-        'Select Screen Size', 
-        options=['ALL', 'Under 14"', '14" - 16"', 'Over 16"']
-    )
+        screen_size_filter = st.segmented_control(
+            'Select Screen Size', 
+            options=['ALL', 'Under 14"', '14" - 16"', 'Over 16"']
+        )
 
     # Create a copy of the DataFrame for filtering
     filtered_df = df.copy()
@@ -97,6 +99,7 @@ def data():
     st.dataframe(
         filtered_df, 
         use_container_width=True, 
+        height=500,
         column_config={
             "Price": st.column_config.NumberColumn(
                 'Price (in USD)', 
@@ -107,46 +110,71 @@ def data():
         }
     )
 
-
-# Filter by Brand
-#     all_brands = df['Brand'].unique()
-#     brands = st.multiselect(
-#         'Select Brands', 
-#         options=["All"] + list(all_brands),  # Add "All" to the options
-#         default=["All"]  # Default to "All"
-#     )
-#     # Filter the DataFrame based on selection
-#     if "All" in brands:
-#         filtered_brands = df  # Show all brands
-#     else:
-#         filtered_brands = df[df["Brand"].isin(brands)]
-
-# # Filter by Screen Size
-#     sub13 = df['Screen Size'] < 13
-#     tween = (df['Screen Size'] >= 13) & (df['Screen Size'] < 16)
-#     over16 = df['Screen Size'] > 16
-#     screens = st.segmented_control(
-#         'Select Screen Size',
-#         options=['All', 'Under 14"', '14" - 16"', 'Over 16"'],
-#         default='All')
-#     if screens == 'All':
-#         filtered_sizes = df
-#     elif screens == 'Under 14"':
-#         filtered_sizes = df[sub13]
-#     elif screens == '14" - 16"':
-#         filtered_sizes = df[tween]
-#     elif screens == 'Over 16"':
-#         filtered_sizes = df[over16]
-
-
-         
-
     
 
 def visualizations():
     st.title('Visualizations')
 
+    # Create a bar chart for RAM size distribution
+    fig = px.bar(
+        x=df['Ram Size'].value_counts().index,
+        y=df['Ram Size'].value_counts().values,
+        title="RAM Size Distribution",
+        labels={"x": "RAM Size", "y": "Count"},
+    )
+    # Customize the layout for better visualization
+    fig.update_layout(
+        xaxis_title="RAM Size",
+        yaxis_title="Count",
+        template="plotly_white",
+        xaxis=dict(categoryorder="total descending")  # Order by count
+    )
+    st.plotly_chart(fig)
 
+    st.divider()
+
+    # Create a histogram for Price distribution
+    fig = px.histogram(
+        df,
+        x="Price",
+        nbins=6,  # Number of bins for better granularity
+        title="Price Distribution of Laptops",
+        labels={"Price": "Price (in USD)"}
+    )
+    # Customize the layout for better visualization
+    fig.update_layout(
+        xaxis_title="Price (in USD)",
+        yaxis_title="Count",
+        template="plotly_white"
+    )
+    st.plotly_chart(fig)
+    st.caption("Price distribution of laptops in the dataset")
+
+    st.divider()
+
+    new_condition_df = df[df['Condition'].str.lower() == 'new']
+    # Define the desired order of "Ram Size"
+    #ram_order = ['4 MB','2 GB',"4 GB", '6 GB', "8 GB", '12 GB', "16 GB", '20 GB', '24 GB', "32 GB", '64 GB', '128 GB', '512 GB']
+    ram_order = ["4 GB", '6 GB', "8 GB", '12 GB', "16 GB", '20 GB', "32 GB", '64 GB']
+    # Convert the "Ram Size" column to a categorical type with the specified order
+    new_condition_df["Ram Size"] = pd.Categorical(new_condition_df["Ram Size"], categories=ram_order, ordered=True)
+    # Calculate the average price for each RAM size
+    avg_price_per_ram = new_condition_df.groupby("Ram Size")["Price"].mean().reset_index()
+    # Create a line chart to show the average price at each RAM size
+    fig = px.line(
+        avg_price_per_ram,
+        x="Ram Size",
+        y="Price",
+        title="Average New Laptop Price by RAM Size",
+        labels={"Ram Size": "RAM Size", "Price": "Average Price (in USD)"},
+    )
+    # Customize the layout for better visualization
+    fig.update_layout(
+        xaxis_title="RAM Size",
+        yaxis_title="Average Price (in USD)",
+        template="plotly_white"
+    )
+    st.plotly_chart(fig)
 
 
 
